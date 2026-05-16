@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -30,12 +31,14 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"go.woodpecker-ci.org/woodpecker/v3/server"
+	"go.woodpecker-ci.org/woodpecker/v3/server/forge"
 	"go.woodpecker-ci.org/woodpecker/v3/server/model"
 	"go.woodpecker-ci.org/woodpecker/v3/server/pipeline"
 	"go.woodpecker-ci.org/woodpecker/v3/server/pipeline/metadata"
 	"go.woodpecker-ci.org/woodpecker/v3/server/router/middleware/session"
 	"go.woodpecker-ci.org/woodpecker/v3/server/store"
 	"go.woodpecker-ci.org/woodpecker/v3/server/store/types"
+	"go.woodpecker-ci.org/woodpecker/v3/shared/constant"
 )
 
 // CreatePipeline
@@ -711,7 +714,9 @@ func DeletePipelineLogs(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// GetRepoWorkflowNames returns all distinct workflow names that have ever run in a repo.
+// GetRepoWorkflowNames returns all distinct workflow names for a repo, combining
+// historical run names from the DB with pipeline file stems from the forge.
+// This ensures tabs are always populated even before pipelines have run.
 //
 //@SummaryGet all workflow names for a repo
 //@Router/repos/{repo_id}/workflow-names [get]
@@ -721,12 +726,83 @@ func DeletePipelineLogs(c *gin.Context) {
 //@ParamAuthorizationheaderstringtrue"Insert your personal access token"default(Bearer <personal access token>)
 //@Paramrepo_idpathinttrue"the repository id"
 func GetRepoWorkflowNames(c *gin.Context) {
-repo := session.Repo(c)
-names, err := store.FromContext(c).GetRepoWorkflowNames(repo.ID)
-if err != nil {
-_ = c.AbortWithError(http.StatusInternalServerError, err)
-return
+	repo := session.Repo(c)
+	_store := store.FromContext(c)
+
+	// Seed from DB (historical runs).
+	dbNames, err := _store.GetRepoWorkflowNames(repo.ID)
+	if err != nil {
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	nameSet := make(map[string]struct{})
+	for _, n := range dbNames {
+		nameSet[n] = struct{}{}
+	}
+
+	// Augment with file stems from the forge so tabs appear even before first run.
+	if names := workflowNamesFromForge(c, _store, repo); names != nil {
+		for _, n := range names {
+			nameSet[n] = struct{}{}
+		}
+	}
+
+	result := make([]string, 0, len(nameSet))
+	for n := range nameSet {
+		result = append(result, n)
+	}
+	sort.Strings(result)
+	c.JSON(http.StatusOK, result)
 }
-sort.Strings(names)
-c.JSON(http.StatusOK, names)
+
+// workflowNamesFromForge lists pipeline YAML files in the repo's config directory
+// and returns their base names without extension (e.g. "pvweb" from ".woodpecker/pvweb.yml").
+// Returns nil on any error so callers can fall back to DB-only names.
+func workflowNamesFromForge(c *gin.Context, _store store.Store, repo *model.Repo) []string {
+	repoUser, err := _store.GetUser(repo.UserID)
+	if err != nil {
+		return nil
+	}
+
+	_forge, err := server.Config.Services.Manager.ForgeFromRepo(repo)
+	if err != nil {
+		return nil
+	}
+
+	forge.Refresh(c, _forge, _store, repoUser)
+
+	// Resolve the directory to scan: repo.Config if it ends with "/", else the first default dir.
+	configDir := ""
+	if strings.HasSuffix(repo.Config, "/") {
+		configDir = strings.TrimSuffix(repo.Config, "/")
+	} else {
+		// Default: ".woodpecker" (strip trailing slash from constant)
+		configDir = strings.TrimSuffix(constant.DefaultConfigOrder[0], "/")
+	}
+
+	// Use a minimal pipeline stub — Dir() only needs the Ref for the tree API call.
+	commit, err := _forge.BranchHead(c, repoUser, repo, repo.Branch)
+	if err != nil || commit == nil {
+		return nil
+	}
+	stub := &model.Pipeline{Ref: commit.SHA}
+
+	files, err := _forge.Dir(c, repoUser, repo, stub, configDir)
+	if err != nil {
+		return nil
+	}
+
+	var names []string
+	for _, f := range files {
+		base := path.Base(f.Name)
+		if !strings.HasSuffix(base, ".yml") && !strings.HasSuffix(base, ".yaml") {
+			continue
+		}
+		stem := strings.TrimSuffix(strings.TrimSuffix(base, ".yaml"), ".yml")
+		if stem != "" {
+			names = append(names, stem)
+		}
+	}
+	return names
 }
