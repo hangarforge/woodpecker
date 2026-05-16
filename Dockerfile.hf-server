@@ -14,6 +14,8 @@ RUN corepack enable && corepack prepare --activate && \
 
 # ── Stage 2: Build Go server ───────────────────────────────────────────────────
 FROM golang:1.26-alpine AS go-builder
+# gcc + musl-dev + sqlite-dev required for CGO (sqlite3 driver)
+RUN apk --no-cache add gcc musl-dev sqlite-dev
 WORKDIR /app
 # Copy go module files first for caching
 COPY go.mod go.sum ./
@@ -26,7 +28,7 @@ COPY --from=web-builder /app/web/dist ./web/dist
 ARG CI_COMMIT_SHA=dev
 ARG CI_COMMIT_BRANCH=main
 ARG CI_COMMIT_TAG=dev
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build \
   -ldflags "-s -w \
     -X go.woodpecker-ci.org/woodpecker/v3/version.Version=${CI_COMMIT_TAG} \
     -X go.woodpecker-ci.org/woodpecker/v3/version.Hash=${CI_COMMIT_SHA}" \
@@ -35,7 +37,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
 
 # ── Stage 3: Final minimal image ──────────────────────────────────────────────
 FROM alpine:3.21
-RUN apk --no-cache add ca-certificates tzdata && \
+RUN apk --no-cache add ca-certificates tzdata sqlite-libs && \
     addgroup -g 1000 woodpecker && \
     adduser -u 1000 -G woodpecker -D woodpecker && \
     mkdir -p /var/lib/woodpecker && chown woodpecker:woodpecker /var/lib/woodpecker
