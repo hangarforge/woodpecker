@@ -21,7 +21,7 @@
 
           <!-- Deploying badge -->
           <div v-else-if="promotionStatus === 'approved'" class="flex items-center gap-2 text-blue-500">
-            <Icon name="status-running" class="h-5 w-5 animate-spin" />
+            <Icon name="spinner" class="h-5 w-5 animate-spin" />
             <span class="text-sm font-medium">{{ $t('promotion.deploying') }}</span>
           </div>
 
@@ -42,7 +42,7 @@
             v-if="!promotionStatus || promotionStatus === 'failed' || promotionStatus === 'rejected'"
             color="green"
             :text="$t('promotion.deploy_to_prod')"
-            start-icon="push"
+            start-icon="deployment"
             :is-loading="deploying"
             @click="handleDeploy"
           />

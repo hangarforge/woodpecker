@@ -6,14 +6,14 @@
       <p class="text-wp-text-200 text-xs">{{ row.commit.author }}</p>
     </StageCard>
 
-    <Icon name="arrow-right" class="text-wp-text-200 mt-4 h-4 w-4 shrink-0" />
+    <Icon name="chevron-right" class="text-wp-text-200 mt-4 h-4 w-4 shrink-0" />
 
     <!-- Build -->
     <StageCard label="Build" :status="row.build.status" :subtitle="`#${row.build.pipelineNum}`">
       <p class="text-xs">{{ row.build.steps.length }} steps</p>
     </StageCard>
 
-    <Icon name="arrow-right" class="text-wp-text-200 mt-4 h-4 w-4 shrink-0" />
+    <Icon name="chevron-right" class="text-wp-text-200 mt-4 h-4 w-4 shrink-0" />
 
     <!-- Test / Deploy-Test -->
     <StageCard label="Test" :status="row.test.status" :subtitle="`#${row.test.pipelineNum}`">
@@ -22,7 +22,7 @@
       </p>
     </StageCard>
 
-    <Icon name="arrow-right" class="text-wp-text-200 mt-4 h-4 w-4 shrink-0" />
+    <Icon name="chevron-right" class="text-wp-text-200 mt-4 h-4 w-4 shrink-0" />
 
     <!-- Approval -->
     <StageCard
@@ -45,7 +45,7 @@
         <Button
           color="blue"
           text="Deploy to Prod"
-          start-icon="push"
+          start-icon="deployment"
           :is-loading="deploying"
           class="mt-1 text-xs"
           @click="$emit('trigger', row)"
@@ -56,7 +56,7 @@
       </template>
     </StageCard>
 
-    <Icon name="arrow-right" class="text-wp-text-200 mt-4 h-4 w-4 shrink-0" />
+    <Icon name="chevron-right" class="text-wp-text-200 mt-4 h-4 w-4 shrink-0" />
 
     <!-- Prod -->
     <StageCard

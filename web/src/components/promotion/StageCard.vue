@@ -55,10 +55,10 @@ const STATUS_TEXT: Record<string, string> = {
 
 const STAGE_ICONS: Record<string, IconNames> = {
   Commit: 'commit',
-  Build: 'build',
+  Build: 'branch',
   Test: 'status-success',
   Approval: 'status-blocked',
-  Prod: 'push',
+  Prod: 'deployment',
 };
 
 const cardClasses = computed(() =>

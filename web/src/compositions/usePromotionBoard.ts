@@ -1,5 +1,4 @@
 import { ref, onUnmounted } from 'vue';
-import useConfig from '~/compositions/useConfig';
 
 export interface BoardStageCommit {
   sha?: string;
@@ -62,7 +61,6 @@ export interface BoardData {
 
 export function usePromotionBoard(repoId: number) {
   const config = useConfig();
-  const hfciApiUrl = config.rootPath.replace('woodpecker', 'hfci-api');
   const hfciBaseUrl = `${window.location.protocol}//${window.location.host.replace('woodpecker', 'hfci-api')}`;
   const apiBase = import.meta.env.VITE_HFCI_API_URL ?? hfciBaseUrl;
 
