@@ -28,13 +28,13 @@
         v-if="repoPermissions.push && route.name !== 'repo-manual'"
         :text="$t('repo.manual_pipeline.trigger')"
         start-icon="manual-pipeline"
-        :to="{ name: 'repo-manual' }"
+        :to="{ name: 'repo-manual', query: manualPipelineQuery }"
       />
       <Button
         v-else-if="repoPermissions.push"
         :text="$t('repo.manual_pipeline.show_pipelines')"
         start-icon="back"
-        :to="{ name: 'repo' }"
+        :to="{ name: 'repo', query: manualPipelineQuery }"
       />
     </template>
 
@@ -135,6 +135,11 @@ onMounted(() => {
 
 watch([repositoryId], () => {
   loadRepo();
+});
+
+const manualPipelineQuery = computed(() => {
+  const app = typeof route.query.app === 'string' ? route.query.app : undefined;
+  return app ? { app } : undefined;
 });
 
 const badgeUrl = computed(() => repo.value && `${config.rootPath}/api/badges/${repo.value.id}/status.svg`);

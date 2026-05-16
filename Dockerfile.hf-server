@@ -1,0 +1,49 @@
+# HangarForge custom Woodpecker server build
+# Multi-stage: Node (web) → Go (server) → minimal final image
+# Target: linux/arm64 (hft01 EC2 ARM instance)
+
+# ── Stage 1: Build Vue 3 frontend ─────────────────────────────────────────────
+FROM node:22-alpine AS web-builder
+WORKDIR /app/web
+COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml* ./
+RUN npm install -g pnpm@10 --silent && pnpm install --frozen-lockfile
+COPY web/ ./
+RUN pnpm build
+
+# ── Stage 2: Build Go server ───────────────────────────────────────────────────
+FROM golang:1.26-alpine AS go-builder
+WORKDIR /app
+# Copy go module files first for caching
+COPY go.mod go.sum ./
+RUN go mod download
+# Copy all source
+COPY . .
+# Copy built web assets into web/dist (required by go:embed)
+COPY --from=web-builder /app/web/dist ./web/dist
+# Build args injected by CI
+ARG CI_COMMIT_SHA=dev
+ARG CI_COMMIT_BRANCH=main
+ARG CI_COMMIT_TAG=dev
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
+  -ldflags "-s -w \
+    -X go.woodpecker-ci.org/woodpecker/v3/version.Version=${CI_COMMIT_TAG} \
+    -X go.woodpecker-ci.org/woodpecker/v3/version.Hash=${CI_COMMIT_SHA}" \
+  -o /dist/woodpecker-server \
+  go.woodpecker-ci.org/woodpecker/v3/cmd/server
+
+# ── Stage 3: Final minimal image ──────────────────────────────────────────────
+FROM alpine:3.21
+RUN apk --no-cache add ca-certificates tzdata && \
+    addgroup -g 1000 woodpecker && \
+    adduser -u 1000 -G woodpecker -D woodpecker && \
+    mkdir -p /var/lib/woodpecker && chown woodpecker:woodpecker /var/lib/woodpecker
+
+ENV WOODPECKER_IN_CONTAINER=true
+ENV XDG_CACHE_HOME=/var/lib/woodpecker
+ENV XDG_DATA_HOME=/var/lib/woodpecker
+
+EXPOSE 8000 9000 80 443
+COPY --from=go-builder /dist/woodpecker-server /bin/woodpecker-server
+USER woodpecker
+HEALTHCHECK CMD ["/bin/woodpecker-server", "ping"]
+ENTRYPOINT ["/bin/woodpecker-server"]

@@ -1,7 +1,41 @@
 <template>
   <Container full-width class="md:min-h-xs flex grow-0 flex-col md:grow md:px-4">
+    <div class="mb-4 flex justify-end">
+      <div
+        class="border-wp-background-400 dark:border-wp-background-100 bg-wp-background-200 inline-flex items-center rounded-md border p-1"
+      >
+        <button
+          type="button"
+          class="text-wp-text-100 hover:bg-wp-control-neutral-200 rounded-md p-2 transition-colors"
+          :class="{ 'bg-wp-control-neutral-200': pipelineView === 'list' }"
+          :title="listViewTitle"
+          :aria-label="listViewTitle"
+          @click="pipelineView = 'list'"
+        >
+          <Icon name="list-group" />
+        </button>
+        <button
+          type="button"
+          class="text-wp-text-100 hover:bg-wp-control-neutral-200 rounded-md p-2 transition-colors"
+          :class="{ 'bg-wp-control-neutral-200': pipelineView === 'dag' }"
+          :title="dagViewTitle"
+          :aria-label="dagViewTitle"
+          @click="pipelineView = 'dag'"
+        >
+          <Icon name="branch" />
+        </button>
+      </div>
+    </div>
+
     <div class="flex min-h-0 w-full grow flex-wrap-reverse md:flex-nowrap md:gap-4">
       <PipelineStepList
+        v-if="pipelineView === 'list'"
+        v-model:selected-step-id="selectedStepId"
+        :class="{ 'hidden md:flex': pipeline!.status === 'blocked' }"
+        :pipeline="pipeline!"
+      />
+      <PipelineDAG
+        v-else
         v-model:selected-step-id="selectedStepId"
         :class="{ 'hidden md:flex': pipeline!.status === 'blocked' }"
         :pipeline="pipeline!"
@@ -57,7 +91,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, toRef } from 'vue';
+import { computed, ref, toRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -65,6 +99,7 @@ import Button from '~/components/atomic/Button.vue';
 import Icon from '~/components/atomic/Icon.vue';
 import Container from '~/components/layout/Container.vue';
 import Panel from '~/components/layout/Panel.vue';
+import PipelineDAG from '~/components/repo/pipeline/PipelineDAG.vue';
 import PipelineLog from '~/components/repo/pipeline/PipelineLog.vue';
 import PipelineStepList from '~/components/repo/pipeline/PipelineStepList.vue';
 import useApiClient from '~/compositions/useApiClient';
@@ -89,6 +124,9 @@ const repo = requiredInject('repo');
 const repoPermissions = requiredInject('repo-permissions');
 
 const stepId = toRef(props, 'stepId');
+const pipelineView = ref<'list' | 'dag'>('list');
+const listViewTitle = computed(() => 'List view');
+const dagViewTitle = computed(() => 'DAG view');
 
 const defaultStepId = computed(() => pipeline.value?.workflows?.[0].children?.[0].pid ?? null);
 
@@ -110,11 +148,9 @@ const selectedStepId = computed({
         return step.pid;
       }
 
-      // return fallback if step-id is provided, but step cannot be found
       return defaultStepId.value;
     }
 
-    // is opened on >= md-screen
     if (window.innerWidth > 768) {
       return defaultStepId.value;
     }
