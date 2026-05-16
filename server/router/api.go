@@ -108,6 +108,7 @@ func apiRoutes(e *gin.RouterGroup) {
 					repo.GET("/pull_requests", api.GetRepoPullRequests)
 
 					repo.GET("/pipelines", api.GetPipelines)
+					repo.GET("/workflow-names", api.GetRepoWorkflowNames)
 					repo.POST("/pipelines", session.MustPush, api.CreatePipeline)
 					repo.DELETE("/pipelines/:pipeline_number", session.MustRepoAdmin(), api.DeletePipeline)
 					repo.GET("/pipelines/:pipeline_number", api.GetPipeline)

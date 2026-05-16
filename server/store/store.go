@@ -187,6 +187,8 @@ type Store interface {
 	// Workflow
 	WorkflowGetTree(*model.Pipeline) ([]*model.Workflow, error)
 	WorkflowsCreate([]*model.Workflow) error
+	// GetRepoWorkflowNames returns distinct workflow names ever run in a repo.
+	GetRepoWorkflowNames(repoID int64) ([]string, error)
 	WorkflowsReplace(*model.Pipeline, []*model.Workflow) error
 	WorkflowLoad(int64) (*model.Workflow, error)
 	WorkflowUpdate(*model.Workflow) error

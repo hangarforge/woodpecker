@@ -131,3 +131,25 @@ func (s storage) WorkflowUpdate(workflow *model.Workflow) error {
 	_, err := s.engine.ID(workflow.ID).AllCols().Update(workflow)
 	return err
 }
+
+func (s storage) GetRepoWorkflowNames(repoID int64) ([]string, error) {
+	type nameRow struct {
+		Name string `xorm:"name"`
+	}
+	var rows []nameRow
+	err := s.engine.Table("workflows").
+		Select("DISTINCT workflows.name").
+		Join("INNER", "pipelines", "workflows.pipeline_id = pipelines.id").
+		Where("pipelines.repo_id = ?", repoID).
+		Find(&rows)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(rows))
+	for _, r := range rows {
+		if r.Name != "" {
+			names = append(names, r.Name)
+		}
+	}
+	return names, nil
+}

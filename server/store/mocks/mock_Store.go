@@ -6555,3 +6555,24 @@ func (_c *MockStore_WorkflowsReplace_Call) RunAndReturn(run func(pipeline *model
 	_c.Call.Return(run)
 	return _c
 }
+
+// GetRepoWorkflowNames provides a mock function for the type MockStore
+func (_mock *MockStore) GetRepoWorkflowNames(repoID int64) ([]string, error) {
+ret := _mock.Called(repoID)
+if len(ret) == 0 {
+panic("no return value specified for GetRepoWorkflowNames")
+}
+var r0 []string
+if rf, ok := ret.Get(0).(func(int64) []string); ok {
+r0 = rf(repoID)
+} else if ret.Get(0) != nil {
+r0 = ret.Get(0).([]string)
+}
+var r1 error
+if rf, ok := ret.Get(1).(func(int64) error); ok {
+r1 = rf(repoID)
+} else {
+r1 = ret.Error(1)
+}
+return r0, r1
+}

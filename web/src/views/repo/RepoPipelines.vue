@@ -26,7 +26,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -47,12 +47,13 @@ const page = ref(1);
 const selectedWorkflow = ref(typeof route.query.app === 'string' ? route.query.app : '');
 const hydratingWorkflows = ref(false);
 const hydratedPipelineNumbers = new Set<number>();
+// Seed from server-side distinct workflow names so all tabs are visible from the start
+const seededWorkflowNames = ref<string[]>([]);
 
-const workflowNames = computed(() =>
-  Array.from(new Set(pipelines.value.flatMap((pipeline) => pipeline.workflows?.map((workflow) => workflow.name) ?? []))).sort(
-    (workflowA, workflowB) => workflowA.localeCompare(workflowB),
-  ),
-);
+const workflowNames = computed(() => {
+  const fromPipelines = pipelines.value.flatMap((pipeline) => pipeline.workflows?.map((workflow) => workflow.name) ?? []);
+  return Array.from(new Set([...seededWorkflowNames.value, ...fromPipelines])).sort((a, b) => a.localeCompare(b));
+});
 
 const workflowTabs = computed(() => [
   { label: 'All', value: '' },
@@ -106,13 +107,13 @@ watch(
 );
 
 async function hydrateWorkflowMetadata() {
-  if (hydratingWorkflows.value || workflowNames.value.length > 0) {
+  if (hydratingWorkflows.value) {
     return;
   }
 
-  const missingPipelines = pipelines.value
-    .filter((pipeline) => (!pipeline.workflows || pipeline.workflows.length === 0) && !hydratedPipelineNumbers.has(pipeline.number))
-    .slice(0, 10);
+  const missingPipelines = pipelines.value.filter(
+    (pipeline) => (!pipeline.workflows || pipeline.workflows.length === 0) && !hydratedPipelineNumbers.has(pipeline.number),
+  );
 
   if (missingPipelines.length === 0) {
     return;
@@ -135,6 +136,14 @@ async function loadMore() {
   await pipelineStore.loadRepoPipelines(repo.value.id, page.value);
   await hydrateWorkflowMetadata();
 }
+
+onMounted(async () => {
+  try {
+    seededWorkflowNames.value = await apiClient.getRepoWorkflowNames(repo.value.id);
+  } catch {
+    // non-fatal: tabs will still populate from pipeline hydration
+  }
+});
 
 const { t } = useI18n();
 useWPTitle(computed(() => [t('repo.activity'), repo.value.full_name]));

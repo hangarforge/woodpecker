@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -708,4 +709,24 @@ func DeletePipelineLogs(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+// GetRepoWorkflowNames returns all distinct workflow names that have ever run in a repo.
+//
+//@SummaryGet all workflow names for a repo
+//@Router/repos/{repo_id}/workflow-names [get]
+//@Producejson
+//@Success200{array}string
+//@TagsPipelines
+//@ParamAuthorizationheaderstringtrue"Insert your personal access token"default(Bearer <personal access token>)
+//@Paramrepo_idpathinttrue"the repository id"
+func GetRepoWorkflowNames(c *gin.Context) {
+repo := session.Repo(c)
+names, err := store.FromContext(c).GetRepoWorkflowNames(repo.ID)
+if err != nil {
+_ = c.AbortWithError(http.StatusInternalServerError, err)
+return
+}
+sort.Strings(names)
+c.JSON(http.StatusOK, names)
 }
