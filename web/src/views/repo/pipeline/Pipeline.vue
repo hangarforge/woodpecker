@@ -87,6 +87,14 @@
         <PipelineLog v-else-if="selectedStepId !== null" v-model:step-id="selectedStepId" :pipeline="pipeline!" />
       </div>
     </div>
+
+    <!-- Deploy to Prod button — shown when deploy-test step succeeded -->
+    <ProdDeployButton
+      v-if="pipeline!.status === 'success'"
+      :pipeline="pipeline!"
+      :repo-id="repo!.id"
+      :repo-full-name="repo!.full_name"
+    />
   </Container>
 </template>
 
@@ -102,6 +110,7 @@ import Panel from '~/components/layout/Panel.vue';
 import PipelineDAG from '~/components/repo/pipeline/PipelineDAG.vue';
 import PipelineLog from '~/components/repo/pipeline/PipelineLog.vue';
 import PipelineStepList from '~/components/repo/pipeline/PipelineStepList.vue';
+import ProdDeployButton from '~/components/promotion/ProdDeployButton.vue';
 import useApiClient from '~/compositions/useApiClient';
 import { useAsyncAction } from '~/compositions/useAsyncAction';
 import { requiredInject } from '~/compositions/useInjectProvide';

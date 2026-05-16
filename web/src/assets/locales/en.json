@@ -618,5 +618,21 @@
   "exit_fullscreen": "Exit fullscreen",
   "help_translating": "You can help translate Woodpecker into your language on {0}.",
   "weblate": "our Weblate",
-  "disabled": "Disabled"
+  "disabled": "Disabled",
+
+  "promotion": {
+    "tab_title": "Promote",
+    "board_title": "Promotion Board",
+    "board_subtitle": "Track code promotion from test to production.",
+    "refresh": "Refresh",
+    "no_apps": "No apps with deploy-test steps found.",
+    "ready_for_prod": "Ready for Production",
+    "deploy_test_passed": "The deploy-test step passed successfully.",
+    "deploy_to_prod": "Deploy to Prod",
+    "awaiting_approval": "Awaiting Approval",
+    "deploying": "Deploying…",
+    "deployed": "Deployed ✓",
+    "failed": "Deploy Failed",
+    "rejected": "Rejected"
+  }
 }

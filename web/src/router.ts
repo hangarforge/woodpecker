@@ -83,6 +83,12 @@ const routes: RouteRecordRaw[] = [
             ],
           },
           {
+            path: 'promote',
+            name: 'repo-promote',
+            component: (): Component => import('~/views/repo/PromotionBoard.vue'),
+            meta: { repoHeader: true },
+          },
+          {
             path: 'pipeline/:pipelineId',
             component: (): Component => import('~/views/repo/pipeline/PipelineWrapper.vue'),
             props: true,

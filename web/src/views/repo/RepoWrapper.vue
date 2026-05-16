@@ -47,6 +47,7 @@
       match-children
       :title="$t('repo.pull_requests')"
     />
+    <Tab icon="push" :to="{ name: 'repo-promote' }" match-children :title="$t('promotion.tab_title')" />
 
     <router-view />
   </Scaffold>
