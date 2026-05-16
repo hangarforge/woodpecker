@@ -71,5 +71,10 @@
     "vite-svg-loader": "^5.1.1",
     "vitest": "^4.1.4",
     "vue-tsc": "^3.2.6"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "vue-demi"
+    ]
   }
 }
