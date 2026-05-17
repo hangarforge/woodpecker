@@ -93,7 +93,7 @@ export function usePromotionBoard(repoId: number) {
       body: JSON.stringify({ woodpeckerToken: wpToken }),
     });
     if (!res.ok) throw new Error(`hfci-api auth failed: ${res.status}`);
-    const { token } = await res.json();
+    const { accessToken: token } = await res.json();
     localStorage.setItem('hfci-jwt', token);
   }
 
