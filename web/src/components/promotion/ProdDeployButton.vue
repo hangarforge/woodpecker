@@ -69,7 +69,7 @@ const props = defineProps<{
   repoFullName: string;
 }>();
 
-const { triggerPromotion } = usePromotionBoard(props.repoId);
+const { triggerPromotion, authedFetch, apiBase } = usePromotionBoard(props.repoId);
 
 const deploying = ref(false);
 const deployError = ref<string | null>(null);
@@ -106,13 +106,10 @@ async function handleDeploy() {
 }
 
 onMounted(async () => {
-  // Check if a promotion already exists for this pipeline
-  const token = localStorage.getItem('hfci-jwt') ?? '';
-  const apiBase = import.meta.env.VITE_HFCI_API_URL ?? `${window.location.protocol}//${window.location.host.replace('woodpecker', 'hfci-api')}`;
+  // Check if a promotion already exists for this pipeline (auto-auths transparently)
   try {
-    const res = await fetch(
+    const res = await authedFetch(
       `${apiBase}/api/promotions?repoFullName=${encodeURIComponent(props.repoFullName)}&app=${encodeURIComponent(props.pipeline.workflows?.[0]?.name ?? '')}`,
-      { headers: { Authorization: `Bearer ${token}` } },
     );
     if (res.ok) {
       const promotions: { testPipelineNum: number; status: string }[] = await res.json();
